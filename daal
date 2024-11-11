@@ -1,0 +1,171 @@
+#!/usr/bin/env python
+
+import os
+import time
+from typing import Optional, List, Dict
+import openai
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.prompt import Prompt
+from rich.panel import Panel
+from rich.live import Live
+from rich.spinner import Spinner
+import re
+from rich.style import Style
+from rich.theme import Theme
+
+
+# Create theme with both inline code and code block styles
+custom_theme = Theme({
+    "markdown.code": Style(color="magenta"),  # Inline code
+    "markdown.code.pygments": Style(bgcolor="default"),  # Code fence syntax highlighting
+})
+
+class ChatApp:
+    def __init__(self):
+        self.console = Console(theme=custom_theme)  # Use our custom theme
+        self.client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        self.thread_id: Optional[str] = None
+        self.assistant_id = "asst_hGRokCEKkmTycJ0iDMDeoaEq"
+        self.file_metadata: Dict[str, str] = {}
+
+    def create_thread(self) -> None:
+        thread = self.client.beta.threads.create()
+        self.thread_id = thread.id
+
+    def wait_for_run(self, run_id: str) -> None:
+        with Live(Spinner("dots", text="Thinking..."), refresh_per_second=10) as live:
+            while True:
+                run = self.client.beta.threads.runs.retrieve(
+                    thread_id=self.thread_id,
+                    run_id=run_id
+                )
+                if run.status == "completed":
+                    break
+                time.sleep(1)
+
+    def fetch_file_metadata(self, file_id: str) -> None:
+        if file_id not in self.file_metadata:
+            file = self.client.files.retrieve(file_id=file_id)
+            self.file_metadata[file_id] = file.filename
+
+    def transform_docs_url(self, filename: str) -> str:
+        if not filename.startswith('/dyalog-docs/'):
+            return filename
+        return (filename
+                .replace('/dyalog-docs/', 'https://dyalog.github.io/')
+                .replace('/docs/', '/')
+                .replace('.md', '')
+                .replace('/documentation/', '/documentation/20.0/'))
+
+    def display_message(self, content: str, citations: List[Dict] = None) -> None:
+        # Remove citation markers from the content
+        cleaned_content = re.sub(r'【\d+:\d+†source】', '', content)
+        
+        # Create and display the markdown using default Markdown class with code theme
+        md = Markdown(
+            cleaned_content,
+            code_theme="github-light"  # Try a light theme for code blocks
+        )
+        self.console.print(Panel(md, border_style="blue"))
+
+        # Display citations if present
+        if citations:
+            self.console.print("\n[bold]Sources:[/bold]")
+            unique_file_ids = set(citation['fileId'] for citation in citations)
+            
+            for file_id in unique_file_ids:
+                self.fetch_file_metadata(file_id)
+                filename = self.file_metadata.get(file_id)
+                
+                if filename and not filename.startswith('/aplcart'):
+                    url = self.transform_docs_url(filename)
+                    self.console.print(f"• [link={url}]{url}[/link]")
+
+
+    def handle_message(self, message: str) -> None:
+        # Add the user message to the thread
+        self.client.beta.threads.messages.create(
+            thread_id=self.thread_id,
+            role="user",
+            content=message
+        )
+
+        # Create and run the assistant
+        run = self.client.beta.threads.runs.create(
+            thread_id=self.thread_id,
+            assistant_id=self.assistant_id,
+            instructions="Please use the knowledge base to answer questions. Search through the provided documents to find relevant information.",
+            tools=[{"type": "file_search"}]
+        )
+
+        # Wait for the run to complete
+        self.wait_for_run(run.id)
+
+        # Retrieve the assistant's response
+        messages = self.client.beta.threads.messages.list(thread_id=self.thread_id)
+        latest_message = messages.data[0]  # Get the most recent message
+
+        if latest_message.role == "assistant":
+            content = latest_message.content[0].text.value
+            citations = []
+            
+            # Extract citations from annotations if present
+            if hasattr(latest_message.content[0].text, 'annotations'):
+                citations = [
+                    {
+                        'text': annotation.text,
+                        'fileId': annotation.file_citation.file_id,
+                        'startIndex': annotation.start_index,
+                        'endIndex': annotation.end_index
+                    }
+                    for annotation in latest_message.content[0].text.annotations
+                    if annotation.type == 'file_citation'
+                ]
+
+            # Display the response with any citations
+            self.display_message(content, citations)
+
+    def run(self) -> None:
+        # Create the initial thread
+        self.create_thread()
+
+        # Display welcome message
+        self.console.print(Panel.fit(
+            "[bold blue]Welcome to the Dyalog APL Assistant![/bold blue]\n"
+            "Ask me anything about Dyalog APL...",
+            border_style="blue"
+        ))
+
+        # Main chat loop
+        while True:
+            try:
+                # Get user input
+                user_input = Prompt.ask("\n[bold green]You[/bold green]")
+                
+                if user_input.lower() in ['exit', 'quit', 'q']:
+                    break
+                
+                # Handle the message
+                self.handle_message(user_input)
+                
+            except KeyboardInterrupt:
+                self.console.print("\n[bold red]Exiting...[/bold red]")
+                break
+            except EOFError:  # Handle Ctrl-D
+                self.console.print("\n[bold red]Exiting...[/bold red]")
+                break                
+            except Exception as e:
+                self.console.print(f"[bold red]Error:[/bold red] {str(e)}")
+
+def main():
+    # Ensure OPENAI_API_KEY is set
+    if not os.getenv('OPENAI_API_KEY'):
+        print("Error: OPENAI_API_KEY environment variable is not set")
+        return
+
+    app = ChatApp()
+    app.run()
+
+if __name__ == "__main__":
+    main()

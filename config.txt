@@ -1,0 +1,8 @@
+/Users/stefan/work/dyalog-docs/documentation/dotnet-interface
+/Users/stefan/work/dyalog-docs/documentation/interface-guide
+/Users/stefan/work/dyalog-docs/documentation/language-reference-guide
+/Users/stefan/work/dyalog-docs/documentation/object-reference
+/Users/stefan/work/dyalog-docs/documentation/programming-reference-guide
+/Users/stefan/work/dyalog-docs/documentation/unix-installation-and-configuration-guide
+/Users/stefan/work/dyalog-docs/documentation/windows-installation-and-configuration-guide
+/Users/stefan/work/dyalog-docs/documentation/windows-ui-guide

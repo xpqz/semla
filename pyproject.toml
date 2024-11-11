@@ -1,0 +1,18 @@
+[project]
+name = "semla"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "faiss-cpu>=1.9.0",
+    "fastapi>=0.115.4",
+    "llama-index-vector-stores-faiss>=0.2.1",
+    "llama-index>=0.11.22",
+    "openai>=1.54.3",
+    "pandas>=2.2.3",
+    "pydantic>=2.9.2",
+    "rich>=13.9.4",
+    "tiktoken>=0.8.0",
+    "uvicorn>=0.32.0",
+]

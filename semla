@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+
+"""
+Query the FAISS vector store containing markdown document embeddings
+"""
+
+import os
+import json
+import faiss
+from openai import OpenAI
+import argparse
+from typing import List, Dict, Tuple
+import numpy as np
+
+client = OpenAI()
+
+def get_embedding(text: str, model: str = "text-embedding-3-small") -> List[float]:
+    """Get embedding for a text string"""
+    response = client.embeddings.create(
+        input=text,
+        model=model
+    )
+    return response.data[0].embedding
+
+def load_index_and_metadata(data_dir: str) -> Tuple[faiss.Index, Dict]:
+    """Load the FAISS index and metadata mapping"""
+    # Load FAISS index
+    index_path = os.path.join(data_dir, "markdown_embeddings.faiss")
+    if not os.path.exists(index_path):
+        raise FileNotFoundError(f"Index file not found at {index_path}")
+    index = faiss.read_index(str(index_path))
+    
+    # Load metadata
+    metadata_path = os.path.join(data_dir, "metadata_mapping.json")
+    if not os.path.exists(metadata_path):
+        raise FileNotFoundError(f"Metadata file not found at {metadata_path}")
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
+    
+    return index, metadata
+
+def format_result(source: str, score: float) -> str:
+    """Format a single search result"""
+    return f"{source} ({score:.4f})"
+
+def search_index(
+    query: str,
+    index: faiss.Index,
+    metadata: Dict,
+    k: int = 5,
+) -> List[str]:
+    """Search the index for similar documents"""
+    # Get query embedding
+    query_embedding = get_embedding(query)
+    
+    # Convert to numpy array and reshape
+    query_vector = np.array([query_embedding]).astype('float32')
+    
+    # Search the index
+    distances, indices = index.search(query_vector, k)
+    
+    # Process results
+    results = []
+    seen_sources = set()  # Track unique sources
+    
+    for distance, doc_idx in zip(distances[0], indices[0]):
+        if doc_idx == -1:  # FAISS returns -1 if k > number of documents
+            continue
+            
+        doc_metadata = metadata[str(doc_idx)]
+        source = doc_metadata['source']
+        
+        # Only add each source once
+        if source not in seen_sources:
+            results.append(format_result(source, float(distance)))
+            seen_sources.add(source)
+    
+    return results
+
+def main():
+    parser = argparse.ArgumentParser(description='Search FAISS index of markdown documents')
+    parser.add_argument('--data', default='data', help='Directory containing index and metadata')
+    parser.add_argument('--k', type=int, default=5, help='Number of results to return')
+    args = parser.parse_args()
+    
+    try:
+        # Load index and metadata
+        index, metadata = load_index_and_metadata(args.data)
+        
+        print(f"Loaded index with {index.ntotal} vectors")
+        
+        # Interactive search loop
+        while True:
+            try:
+                query = input("> ")
+            except EOFError:  # Handle ^D
+                print()  # Print newline
+                break
+                
+            if query.lower() == 'quit':
+                break
+            
+            results = search_index(query, index, metadata, args.k)
+            
+            if results:
+                for result in results:
+                    # URL transformation
+                    result = result.replace('/Users/stefan/work/dyalog-docs/documentation/', 'https://dyalog.github.io/documentation/20.0/')
+                    result = result.replace('/docs/', '/')
+                    result = result.replace('.md', '')
+                    print(result)
+            
+            print()  # Empty line between results and next prompt
+    
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+if __name__ == "__main__":
+    main()
