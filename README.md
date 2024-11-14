@@ -24,5 +24,7 @@ curl -X POST "http://localhost:8000/search" \
 
 or visit the convenient endpoint http://localhost:8000/docs
 
-The `daal` program uses the custom assistant.
+The `daal` program uses the custom assistant. It expects the custom assistant id to be available as the environment variable `OPENAI_ASSISTANT_ID`.
+
+The `dyaclaude.py` program is an early experiment in making Claude better at APL (not semantic search). A work in progress.
 
