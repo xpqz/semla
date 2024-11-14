@@ -116,4 +116,7 @@ def main():
         print(f"Error: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    if not os.getenv('OPENAI_API_KEY'):
+        print("Error: OPENAI_API_KEY environment variable is not set")
+    else:
+        main()

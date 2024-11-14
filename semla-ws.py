@@ -100,4 +100,7 @@ async def search(query: SearchQuery) -> SearchResult:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    if not os.getenv('OPENAI_API_KEY'):
+        print("Error: OPENAI_API_KEY environment variable is not set")
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=8000)

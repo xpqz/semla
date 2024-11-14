@@ -2,6 +2,11 @@
 
 Some hacky AI experiments.
 
+You need an environment variable with your OpenAI API key set:
+```
+export OPENAI_API_KEY="sk-proj-TI...."
+```
+
 The `faissidx.py` builds a semantic embeddings database in `data`. This takes a while, and uses tokens.
 
 Run the `semla` program to query the index on the command line. You will get back a list of URLs:
@@ -31,6 +36,7 @@ or (for prod):
 gunicorn semla-ws:app -w 4 -k uvicorn.workers.UvicornWorker
 ```
 
+You can test the end point with `curl`:
 ```
 curl -X POST "http://localhost:8000/search" \
      -H "Content-Type: application/json" \
