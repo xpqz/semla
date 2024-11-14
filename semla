@@ -78,7 +78,7 @@ def search_index(
     return results
 
 def main():
-    parser = argparse.ArgumentParser(description='Search FAISS index of markdown documents')
+    parser = argparse.ArgumentParser(description='Search FAISS index of Markdown documents')
     parser.add_argument('--data', default='data', help='Directory containing index and metadata')
     parser.add_argument('--k', type=int, default=5, help='Number of results to return')
     args = parser.parse_args()
