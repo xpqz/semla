@@ -26,7 +26,7 @@ class ChatApp:
         self.console = Console(theme=custom_theme)  # Use our custom theme
         self.client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         self.thread_id: Optional[str] = None
-        self.assistant_id = "asst_hGRokCEKkmTycJ0iDMDeoaEq"
+        self.assistant_id = os.getenv('OPENAI_ASSISTANT_ID')
         self.file_metadata: Dict[str, str] = {}
 
     def create_thread(self) -> None:
@@ -162,6 +162,10 @@ def main():
     # Ensure OPENAI_API_KEY is set
     if not os.getenv('OPENAI_API_KEY'):
         print("Error: OPENAI_API_KEY environment variable is not set")
+        return
+    
+    if not os.getenv('OPENAI_ASSISTANT_ID'):
+        print("Error: OPENAI_ASSISTANT_ID environment variable is not set")
         return
 
     app = ChatApp()
