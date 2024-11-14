@@ -4,7 +4,20 @@ Some hacky AI experiments.
 
 The `faissidx.py` builds a semantic embeddings database in `data`. This takes a while, and uses tokens.
 
-Run the `semla` program to query the index on the command line. You will get back a list of URLs.
+Run the `semla` program to query the index on the command line. You will get back a list of URLs:
+
+```
+% ./semla
+Loaded index with 3154 vectors
+> how do i serialise and compress an apl array?
+https://dyalog.github.io/documentation/20.0/object-reference/miscellaneous/com-data-types (1.0299)
+https://dyalog.github.io/documentation/20.0/programming-reference-guide/component-files/introduction (1.0334)
+https://dyalog.github.io/documentation/20.0/language-reference-guide/the-i-beam-operator/serialise-array (1.0646)
+https://dyalog.github.io/documentation/20.0/programming-reference-guide/introduction/namespaces/serialising-namespaces (1.0819)
+https://dyalog.github.io/documentation/20.0/programming-reference-guide/introduction/arrays/arrays (1.1204)
+
+>
+```
 
 Run the webservice:
 
