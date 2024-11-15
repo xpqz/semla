@@ -38,9 +38,25 @@ gunicorn semla-ws:app -w 4 -k uvicorn.workers.UvicornWorker
 
 You can test the end point with `curl`:
 ```
-curl -X POST "http://localhost:8000/search" \
+% curl -s -X POST "http://localhost:8000/search" \
      -H "Content-Type: application/json" \
-     -d '{"query": "how do I serialise and compress an apl array?", "k": 5}'
+     -d '{"query": "how do I serialise and compress an apl array?", "k": 5}' | jq .
+{
+  "urls": [
+    "https://dyalog.github.io/documentation/20.0/object-reference/miscellaneous/com-data-types",
+    "https://dyalog.github.io/documentation/20.0/language-reference-guide/the-i-beam-operator/serialise-array",
+    "https://dyalog.github.io/documentation/20.0/programming-reference-guide/component-files/introduction",
+    "https://dyalog.github.io/documentation/20.0/programming-reference-guide/introduction/namespaces/serialising-namespaces",
+    "https://dyalog.github.io/documentation/20.0/programming-reference-guide/introduction/arrays/arrays"
+  ],
+  "scores": [
+    1.032598614692688,
+    1.0425920486450195,
+    1.058443307876587,
+    1.0692082643508911,
+    1.1278154850006104
+  ]
+}
 ```
 
 or visit the convenient endpoint http://localhost:8000/docs
